@@ -15,7 +15,7 @@ let ALLOWED_OUTPUTS = ['hdmi', 'local', 'both', 'alsa'];
 // ----- Functions ----- //
 
 // Creates an array of arguments to pass to omxplayer.
-function buildArgs (source, givenOutput, loop, initialVolume, showOsd) {
+function buildArgs (source, givenOutput, loop, initialVolume, subtitles, showOsd) {
 	let output = '';
 
 	if (givenOutput) {
@@ -37,6 +37,10 @@ function buildArgs (source, givenOutput, loop, initialVolume, showOsd) {
 
 	let args = [source, '-o', output, '--blank', osd ? '' : '--no-osd'];
 
+	if (subtitles){
+		args.push('--subtitles', subtitles);
+	}
+
 	// Handle the loop argument, if provided
 	if (loop) {
 		args.push('--loop');
@@ -54,7 +58,7 @@ function buildArgs (source, givenOutput, loop, initialVolume, showOsd) {
 
 // ----- Omx Class ----- //
 
-function Omx (source, output, loop, initialVolume, showOsd) {
+function Omx (source, output, loop, initialVolume, subtitles, showOsd) {
 
 	// ----- Local Vars ----- //
 
@@ -81,9 +85,9 @@ function Omx (source, output, loop, initialVolume, showOsd) {
 	}
 
 	// Spawns the omxplayer process.
-	function spawnPlayer (src, out, loop, initialVolume, showOsd) {
+	function spawnPlayer (src, out, loop, initialVolume, subtitles, showOsd) {
 
-		let args = buildArgs(src, out, loop, initialVolume, showOsd);
+		let args = buildArgs(src, out, loop, initialVolume, subtitles, showOsd);
 		console.log('args for omxplayer:', args);
 		let omxProcess = spawn('omxplayer', args);
 		open = true;
@@ -113,23 +117,23 @@ function Omx (source, output, loop, initialVolume, showOsd) {
 	// ----- Setup ----- //
 
 	if (source) {
-		player = spawnPlayer(source, output, loop, initialVolume, showOsd);
+		player = spawnPlayer(source, output, loop, initialVolume, subtitles, showOsd);
 	}
 
 	// ----- Methods ----- //
 
 	// Restarts omxplayer with a new source.
-	omxplayer.newSource = (src, out, loop, initialVolume, showOsd) => {
+	omxplayer.newSource = (src, out, loop, initialVolume, subtitles, showOsd) => {
 
 		if (open) {
 
-			player.on('close', () => { player = spawnPlayer(src, out, loop, initialVolume, showOsd); });
+			player.on('close', () => { player = spawnPlayer(src, out, loop, initialVolume, subtitles, showOsd); });
 			player.removeListener('close', updateStatus);
 			writeStdin('q');
 
 		} else {
 
-			player = spawnPlayer(src, out, loop, initialVolume, showOsd);
+			player = spawnPlayer(src, out, loop, initialVolume, subtitles, showOsd);
 
 		}
 
