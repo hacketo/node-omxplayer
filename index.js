@@ -15,7 +15,7 @@ let ALLOWED_OUTPUTS = ['hdmi', 'local', 'both', 'alsa'];
 // ----- Functions ----- //
 
 // Creates an array of arguments to pass to omxplayer.
-function buildArgs (source, givenOutput, loop, initialVolume, showOsd, subtitles) {
+function buildArgs (source, givenOutput, loop, initialVolume, showOsd, customArgs) {
 	let output = '';
 
 	if (givenOutput) {
@@ -37,10 +37,6 @@ function buildArgs (source, givenOutput, loop, initialVolume, showOsd, subtitles
 
 	let args = [source, '-o', output, '--blank', osd ? '' : '--no-osd'];
 
-	if (subtitles){
-		args.push('--subtitles', subtitles);
-	}
-
 	// Handle the loop argument, if provided
 	if (loop) {
 		args.push('--loop');
@@ -51,6 +47,10 @@ function buildArgs (source, givenOutput, loop, initialVolume, showOsd, subtitles
 		args.push('--vol', initialVolume);
 	}
 
+	if (Array.isArray(customArgs)){
+		args.push.apply(args, customArgs);
+	}
+
 	return args;
 
 }
@@ -58,7 +58,7 @@ function buildArgs (source, givenOutput, loop, initialVolume, showOsd, subtitles
 
 // ----- Omx Class ----- //
 
-function Omx (source, output, loop, initialVolume, showOsd, subtitles) {
+function Omx (source, output, loop, initialVolume, showOsd, customArgs) {
 
 	// ----- Local Vars ----- //
 
@@ -85,9 +85,9 @@ function Omx (source, output, loop, initialVolume, showOsd, subtitles) {
 	}
 
 	// Spawns the omxplayer process.
-	function spawnPlayer (src, out, loop, initialVolume, showOsd, subtitles) {
+	function spawnPlayer (src, out, loop, initialVolume, showOsd, customArgs) {
 
-		let args = buildArgs(src, out, loop, initialVolume, showOsd, subtitles);
+		let args = buildArgs(src, out, loop, initialVolume, showOsd, customArgs);
 		console.log('args for omxplayer:', args);
 		let omxProcess = spawn('omxplayer', args);
 		open = true;
@@ -117,23 +117,23 @@ function Omx (source, output, loop, initialVolume, showOsd, subtitles) {
 	// ----- Setup ----- //
 
 	if (source) {
-		player = spawnPlayer(source, output, loop, initialVolume, showOsd, subtitles);
+		player = spawnPlayer(source, output, loop, initialVolume, showOsd, customArgs);
 	}
 
 	// ----- Methods ----- //
 
 	// Restarts omxplayer with a new source.
-	omxplayer.newSource = (src, out, loop, initialVolume, showOsd, subtitles) => {
+	omxplayer.newSource = function(src, out, loop, initialVolume, showOsd, customArgs) {
 
 		if (open) {
 
-			player.on('close', () => { player = spawnPlayer(src, out, loop, initialVolume, showOsd, subtitles); });
+			player.on('close', () => { player = spawnPlayer(src, out, loop, initialVolume, showOsd, customArgs); });
 			player.removeListener('close', updateStatus);
 			writeStdin('q');
 
 		} else {
 
-			player = spawnPlayer(src, out, loop, initialVolume, showOsd, subtitles);
+			player = spawnPlayer(src, out, loop, initialVolume, showOsd, customArgs);
 
 		}
 
